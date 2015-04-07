@@ -94,6 +94,7 @@
       var debounce = 0, completion = this, finished;
       var closeOn = this.options.closeCharacters;
       var startPos = this.cm.getCursor(), startLen = this.cm.getLine(startPos.line).length;
+      var prevLine = this.cm.getLine(startPos.line);
 
       var requestAnimationFrame = window.requestAnimationFrame || function(fn) {
         return setTimeout(fn, 1000/60);
@@ -104,7 +105,7 @@
         if (finished) return;
         finished = true;
         completion.close();
-        completion.cm.off("cursorActivity", activity);
+        completion.cm.off("keyup", activity);
         if (data) CodeMirror.signal(data, "close");
       }
 
@@ -129,8 +130,13 @@
       }
 
       function activity() {
-        clearDebounce();
         var pos = completion.cm.getCursor(), line = completion.cm.getLine(pos.line);
+
+        if (prevLine === line) return;
+        prevLine = line;
+
+        clearDebounce();
+
         if (pos.line != startPos.line || line.length - pos.ch != startLen - startPos.ch ||
             pos.ch < startPos.ch || completion.cm.somethingSelected() ||
             (pos.ch && closeOn.test(line.charAt(pos.ch - 1)))) {
@@ -140,7 +146,7 @@
           if (completion.widget) completion.widget.close();
         }
       }
-      this.cm.on("cursorActivity", activity);
+      this.cm.on("keyup", activity);
       this.onClose = done;
     },
 
